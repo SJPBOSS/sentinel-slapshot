@@ -1,0 +1,129 @@
+HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>SENTINEL SLAPSHOT</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #070A0F; font-family: 'Segoe UI', Roboto, sans-serif; color: white; }
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 10; }
+        .score-card { background: rgba(11, 14, 20, 0.8); padding: 15px 30px; border-radius: 15px; border: 1px solid #C8102E; display: inline-block; box-shadow: 0 0 20px rgba(200, 16, 46, 0.3); }
+        .label { font-size: 12px; letter-spacing: 3px; color: #888; text-transform: uppercase; }
+        .score { font-size: 64px; font-weight: 800; color: #fff; line-height: 1; }
+        #msg { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 40px; font-weight: 900; color: #C8102E; text-shadow: 0 0 20px #C8102E; opacity: 0; transition: 0.3s; pointer-events: none; }
+        #controls { position: absolute; bottom: 40px; width: 100%; text-align: center; }
+        .shoot-btn { background: #C8102E; color: white; border: none; padding: 20px 50px; border-radius: 50px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 0 #8b0b1f; transition: 0.1s; }
+        .shoot-btn:active { transform: translateY(5px); box-shadow: 0 5px 0 #8b0b1f; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div class="score-card">
+            <div class="label">Sentinel Core Security</div>
+            <div class="score" id="score">0</div>
+        </div>
+    </div>
+    <div id="msg">THREAT NEUTRALIZED!</div>
+    <div id="controls"><button class="shoot-btn" id="shootBtn">FIRE SENTINEL</button></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // --- 1. CORE SETUP ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x070A0F);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // --- 2. THE CYBER RINK ---
+        const rink = new THREE.Mesh(new THREE.PlaneGeometry(22, 45), new THREE.MeshPhongMaterial({ color: 0x121826 }));
+        rink.rotation.x = -Math.PI / 2;
+        scene.add(rink);
+
+        // Neon Boundary Lines
+        const grid = new THREE.GridHelper(22, 10, 0x3B7BFF, 0x1A1A20);
+        grid.position.y = 0.05;
+        scene.add(grid);
+
+        // THE DEFENDER (Goalie - Red Shield)
+        const defender = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 0.5), new THREE.MeshStandardMaterial({ color: 0xC8102E, emissive: 0xC8102E, emissiveIntensity: 0.8 }));
+        defender.position.set(0, 1, -18);
+        scene.add(defender);
+
+        // THE CORE (Puck - Glowing Cyan)
+        const core = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.3, 32), new THREE.MeshStandardMaterial({ color: 0x00F5D4, emissive: 0x00F5D4, emissiveIntensity: 1 }));
+        scene.add(core);
+
+        // LIGHTING
+        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+        const spot = new THREE.SpotLight(0xffffff, 1);
+        spot.position.set(0, 20, 10);
+        scene.add(spot);
+
+        camera.position.set(0, 14, 18);
+        camera.lookAt(0, 0, -5);
+
+        // --- 3. GAMEPLAY LOGIC ---
+        let score = 0;
+        let coreVel = new THREE.Vector3();
+        let active = false;
+        let defDir = 1;
+
+        function fire() {
+            if (active) return;
+            active = true;
+            coreVel.set((Math.random() - 0.5) * 0.5, 0, -1.2);
+        }
+
+        document.getElementById('shootBtn').onclick = fire;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Move Defender (Smooth AI movement)
+            defender.position.x += 0.18 * defDir;
+            if (Math.abs(defender.position.x) > 7) defDir *= -1;
+
+            if (active) {
+                core.position.add(coreVel);
+
+                // Collision with Defender
+                if (core.position.distanceTo(defender.position) < 2.5) {
+                    resetCore();
+                }
+
+                // Goal Score
+                if (core.position.z < -20) {
+                    score++;
+                    document.getElementById('score').innerText = score;
+                    const msg = document.getElementById('msg');
+                    msg.style.opacity = 1;
+                    setTimeout(() => msg.style.opacity = 0, 800);
+                    resetCore();
+                }
+
+                // Reset if missed
+                if (core.position.z < -25 || Math.abs(core.position.x) > 12) resetCore();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function resetCore() {
+            core.position.set(0, 0.2, 12);
+            coreVel.set(0, 0, 0);
+            active = false;
+        }
+
+        resetCore();
+        animate();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
